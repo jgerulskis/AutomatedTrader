@@ -10,7 +10,8 @@ auth_resp = OAuth1(config.consumer_key, config.secret_consumer_key, config.acces
 
 csv_file = config.data_path
 
-def search(search_term="bitcoin", MAX_RESULTS=100):
+def search(MAX_RESULTS=100):
+    search_term = config.search_term
     url = 'https://api.twitter.com/2/tweets/search/recent?query=' + search_term + '&tweet.fields=created_at,public_metrics,lang&user.fields=public_metrics&max_results=' + str(MAX_RESULTS)
     search_results = requests.get(url, auth=auth_resp)
     print('Server responded with {}'.format(search_results.status_code))
