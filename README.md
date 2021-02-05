@@ -6,4 +6,4 @@ A small script to gather tweets from Twitter. This script will be used to gather
 1. Refer to example_config.py
 2. Duplicate it with the name config.py
 3. Add your API keys
-4. Make sure you install necessary packages
+4. Install dependecies
