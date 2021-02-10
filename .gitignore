@@ -1,4 +1,4 @@
-data/
 config.py
 __pycache__/
+/data
 .vscode/

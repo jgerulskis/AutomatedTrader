@@ -5,7 +5,7 @@ import time
 import config
 import progressbar
 
-from dataPoint import DataPoint
+from data_point import DataPoint
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 
