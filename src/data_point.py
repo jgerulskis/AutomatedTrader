@@ -19,4 +19,4 @@ class DataPoint:
     return np.var(self.values)
 
   def as_dict(self):
-    return {'count': self.count, 'average': self.get_average(), 'variance': self.get_variance(), 'date': self.date}
+    return {'count': self.count, 'average': self.get_average(), 'variance': self.get_variance(), 'timestamp': self.date}
