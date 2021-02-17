@@ -2,47 +2,45 @@ import csv
 import sys
 import numpy as np
 
+project_directory = 'C:/Users/dtwiz/Documents/GitHub/Twitter-data-collector/'#Must be changed to your projectdirectory
+
 # settings = {
-#     'inputPath' : 'TimeSeriesData\\KRAKEN_XRPUSD, 1D.csv',
+#     'inputPath' : 'data\\KRAKEN_XRPUSD, 1D.csv',
 #     'outPath' : 'XRP_ROI_1_Day',
 #     'asset' : 'XRP',
 #     'quote' : 'USD',
 #     'cTime' : 1,
 #     'cUnit' : 'D',#D for day
-#     'length' : 1100,
 #     'function' : 'ROIInNCandles',
 #     'params' : {'nCandles' : 7}
 # }
 
-# settings = {
-#     'inputPath': 'TimeSeriesData\\KRAKEN_XRPUSD, 1D.csv',
-#     'outPath': 'XRP_volRatio_1_Day',
-#     'asset': 'XRP',
-#     'quote': 'USD',
-#     'cTime': 1,
-#     'cUnit': 'D',  #D for day
-#     'length': 1100,
-#     'function': 'avgVolumeRatio',
-#     'params': {
-#         'avgCandles': 21
-#     }
-# }
-
-root = 'C:/Users/dtwiz/Documents/GitHub/Twitter-data-collector/'
-
 settings = {
-    'inputPath': root + 'data/KRAKEN_XRPUSD, 1D.csv',
-    'outPath': root + 'data/KRAKEN_XRPUSD, 1D COMP.csv',
-    'asset': 'XRP',
+    'inputPath': project_directory + 'data\\ETH_1_Minute_COMP.csv',
+    'outPath': project_directory + 'data\\ETH_1_Minute_COMP.csv',
+    'asset': 'ETH',
     'quote': 'USD',
     'cTime': 1,
-    'cUnit': 'D',  #D for day
-    'length': 1100,
+    'cUnit': 'm',  #D for day
     'function': 'combineData',
     'params': {
-        'addPath' : root + 'data/XRP_ext_1_Day.csv',
+        'addPath' : project_directory + 'data\\ETH_volRatio_1_Minute.csv'
     }
 }
+
+
+# settings = {
+#     'inputPath': project_directory + 'data/KRAKEN_XRPUSD, 1D.csv',
+#     'outPath': project_directory + 'data/KRAKEN_XRPUSD, 1D COMP.csv',
+#     'asset': 'XRP', #the asset being traded
+#     'quote': 'USD', #the currency that the price is given in
+#     'cTime': 1, #number of units of time in each time step
+#     'cUnit': 'D',  #m for minute and D for day
+#     'function': 'combineData',
+#     'params': {
+#         'addPath' : project_directory + 'data/XRP_ext_1_Day.csv',
+#     }
+# }
 
 def dataMaker(inData, mapFunction):  #map functions take in a list of dictionaries and output a list of dictionaries
     return mapFunction(inData)
@@ -54,6 +52,11 @@ def saveData(data, fields, name):  #save 2d list as a csv
         writer.writerow(fields)
         writer.writerows(data)
 
+def saveCSV(data, path):
+    with open(path, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, data[0].keys())
+        dict_writer.writeheader()
+        dict_writer.writerows(data)
 
 def ROIInNCandles(data):
     outData = []
@@ -63,10 +66,10 @@ def ROIInNCandles(data):
     initPrices = []
     pricesIndex = 0  #index for circular indexing
     for x in range(nCandles):
-        initPrices.append(data[x]['close'])
+        initPrices.append(float(data[x]['close']))
     for x in range(len(data) - nCandles):
         index = x + nCandles
-        close = data[index]['close']
+        close = float(data[index]['close'])
         initPrice = initPrices[pricesIndex]
         outData[x][0] = close / initPrice - 1  #long roi
         initPrices[pricesIndex] = close
@@ -89,11 +92,11 @@ def avgVolume(data):
     avgVols = []
     for x in range(avgCandles):
         outData.append([None])
-        avgVols.append(data[x]['vol'])
+        avgVols.append(float(data[x]['vol']))
     for x in range(len(data) - avgCandles):
         index = x + avgCandles
         outData.append([sum(avgVols) / len(avgVols)])
-        avgVols[x % avgCandles] = data[index]['vol']
+        avgVols[x % avgCandles] = float(data[index]['vol'])
     return outData
 
 def stripData(data):
@@ -109,28 +112,29 @@ def stripData(data):
         #     'vol': data[x]['vol']
         # }
         outData.append(temp)
-    print(outData)
     return outData
 
 def combineData(data):
     addData = loadData(settings['params']['addPath'])
-    print(addData[0])
+    data = loadData(settings['inputPath'])
     for x in range(len(data)):
-        for y in range(len(addData[0])):
-            data[x].append(addData[x][y])
+        for y in addData[0].keys():
+            data[x][y] = addData[x][y]
     return data
 
 def avgVolumeRatio(data):
     outData = []
     avgCandles = settings['params']['avgCandles']
     avgVols = avgVolume(data)
-    print(avgVols)
     for x in range(avgCandles):
         outData.append([None])
     for x in range(len(data) - avgCandles):
         index = x + avgCandles
-        vol = data[index]['vol']
-        outData.append(vol / avgVols[index])
+        vol = float(data[index]['vol'])
+        if abs(avgVols[index][0]) <= 0.00001:
+            outData.append([50])#to avoid divide by zero add a large value
+        else:
+            outData.append([vol / avgVols[index][0]])
     return outData
 
 
@@ -143,7 +147,7 @@ def MA(data):
         index = x + (period - 1)
         ma = 0
         for y in range(period):
-            ma += data[index - y]['close']
+            ma += float(data[index - y]['close'])
         ma /= period
         outData[index][0] = ma
     return outData
@@ -159,7 +163,7 @@ def perATH(data):
     if pair in aths:
         ath = aths[pair]
     for x in range(len(data)):
-        close = data[x]['close']
+        close = float(data[x]['close'])
         if close > ath:
             ath = close
             outData[x][0] = 1
@@ -203,7 +207,7 @@ def extCandle(data):
 
 
 def getCandles(self, asset, quote, cTime, cUnit, length):
-    fileName = "C:/Users/dtwiz/Documents/GitHub/Twitter-data-collector/data/KRAKEN_" + asset + quote + ', '
+    fileName = project_directory + "data/KRAKEN_" + asset + quote + ', '
     if cUnit == 'm':
         fileName += str(cTime) + '.csv'
     else:
@@ -225,31 +229,59 @@ def getCandles(self, asset, quote, cTime, cUnit, length):
     return candleList[-length:]
 
 def loadData(filename):
-    tempArr = np.genfromtxt(filename, delimiter=',')
-    return tempArr[:-1]
+    with open(filename, "r") as f:
+        reader = csv.DictReader(f)
+        tempArr = list(reader)
+    return tempArr
 
 def getCandles(fileName):
-    tempArr = np.loadtxt(fileName,
-                         delimiter=',',
-                         skiprows=1,
-                         usecols=(0, 1, 2, 3, 4, 5))
+    # tempArr = np.loadtxt(fileName,
+    #                      delimiter=',',
+    #                      skiprows=1,
+    #                      usecols=(0, 1, 2, 3, 4, 5))
     candleList = []
+    tempArr = loadData(fileName)
     for x in range(len(tempArr)):
-        candleList.append({
-            'time': tempArr[x][0],
-            'open': tempArr[x][1],
-            'high': tempArr[x][2],
-            'low': tempArr[x][3],
-            'close': tempArr[x][4],
-            'vol': tempArr[x][5]
-        })
+        temp = {}
+        if 'Unix Timestamp' in tempArr[x].keys():
+            temp['time'] = tempArr[x]['Unix Timestamp']
+        else:
+            temp['time'] = tempArr[x]['time']
+        if 'Open' in tempArr[x].keys():
+            temp['open'] = tempArr[x]['Open']
+        else:
+            temp['open'] = tempArr[x]['open']
+        if 'High' in tempArr[x].keys():
+            temp['high'] = tempArr[x]['High']
+        else:
+            temp['high'] = tempArr[x]['high']
+        if 'Low' in tempArr[x].keys():
+            temp['low'] = tempArr[x]['Low']
+        else:
+            temp['low'] = tempArr[x]['low']
+        if 'Close' in tempArr[x].keys():
+            temp['close'] = tempArr[x]['Close']
+        else:
+            temp['close'] = tempArr[x]['close']
+        if 'Volume' in tempArr[x].keys():
+            temp['vol'] = tempArr[x]['Volume']
+        else:
+            temp['vol'] = tempArr[x]['vol']
+        # candleList.append({
+        #     'time': tempArr[x][0],
+        #     'open': tempArr[x][1],
+        #     'high': tempArr[x][2],
+        #     'low': tempArr[x][3],
+        #     'close': tempArr[x][4],
+        #     'vol': tempArr[x][5]
+        # })
+        candleList.append(temp)
     return candleList
 
 def combineFields(data):
     fields = []
-    for x in range(len(data)):
-        for y in data[x]:
-            fields.append(y)
+    for y in data[0]:
+        fields.append(y)
     return fields
 
 
@@ -269,19 +301,19 @@ def nameToFields(name, data):
     if name == 'combineData':
         return combineFields(data)
     nameToFields = {
-        'extCandle': ['price', 'candles'],
+        'extCandle': ['extPrice', 'candles'],
         'ROIInNCandles': ['long roi'],
         'MA': ['MA'],
         'perATH': ['perATH'],
         'avgVolumeRatio': ['ratio'],
         'avgVolume': ['avgVol'],
-        'volume': ['vol'],
+        'volume': ['volume'],
         'stripData' : ['time', 'open', 'high', 'low', 'close', 'vol']
     }
     return nameToFields[name]
 
 #Main code can be run by giving the input path and output file name in the
-#command line when runnings this file or without which will use the default settings
+#command line when running this file or without which will use the default settings
 if len(sys.argv) > 0:
     if len(sys.argv) > 1:
         inputPath = sys.argv[1]
@@ -296,5 +328,8 @@ if len(sys.argv) > 0:
         outName = settings['outPath']
     data = dataMaker(getCandles(inputPath),
                      nameToFuntion[settings['function']])
-    saveData(data, nameToFields(settings['function'], data), outName)
+    if settings['function'] == 'combineData':
+        saveCSV(data, outName)
+    else:
+        saveData(data, nameToFields(settings['function'], data), outName)
     print("File created and saved succesfully!")
