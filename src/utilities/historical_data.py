@@ -103,7 +103,7 @@ class TwitterHistorical():
   
     for index, row in df.iterrows():
       current_time = pd.to_datetime(row['created_at'], errors='coerce')
-      if (current_time - origin).total_seconds() > (timeframe * 60): # keep time frame consistently in minutes
+      if (current_time - origin).total_seconds() > (timeframe * 60):
         origin = current_time
         datapoints.append(current_data_point)
         current_data_point = DataPoint(current_time)
@@ -130,5 +130,6 @@ class TwitterHistorical():
     price_data['timestamp'] = pd.to_datetime(price_data['timestamp'] ,unit='ms', utc=True)
     price_data = price_data.sort_values(by='timestamp')
 
-    new_df = pd.merge_asof(price_data, data_points, on='timestamp', tolerance=pd.Timedelta("{} minutes".format(timeframe)))
-    new_df.to_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv")
+    new_df = pd.merge_asof(price_data, data_points, on='timestamp', tolerance=pd.Timedelta("{} minutes".format(timeframe + 2)))
+    new_df = new_df.loc[:,~new_df.columns.str.match("Unnamed")]
+    new_df.to_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv", index=False)

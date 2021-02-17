@@ -1,5 +1,6 @@
 from models.abstract_model import AbstractModel
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
 class KNN(AbstractModel):
   def __init__(self, data, labels):
