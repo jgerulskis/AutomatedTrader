@@ -39,9 +39,9 @@ def show_correlation_matrix(dataframe, method='kendall'):
 df = pd.read_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv")
 df = df.dropna()
 show_correlation_matrix(df)
-k = LR(df.drop(['Timestamp', 'Low', 'High', 'Close'], axis=1), df['Close'])
-
+k = LR(df.drop(['Date', 'High', 'Low', 'Close', 'Daily Net', 'Percent Gained'], axis=1), df['Percent Gained'])
 k.test()
+k.evaluate()
 
 
 
