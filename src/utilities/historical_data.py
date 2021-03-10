@@ -115,21 +115,21 @@ class TwitterHistorical():
     return datapoints
 
   @staticmethod
-  def merge_with_historical(data_points, price_data, timeframe=30):
+  def merge_with_historical(data_points, price_data, timeframe=30, offset=0):
     """
     Merge to data points with price data
 
     data_points is a pandas dataframe with a column average, variance, count and timestamp
-    price_data is a pandas dataframe with a column time
+    price_data is a pandas dataframe with a column timestamp
     """
-    data_points['timestamp'] = pd.to_datetime(data_points['timestamp'])
+    data_points['timestamp'] = pd.to_datetime(data_points['timestamp'], unit='ns',  utc=True)
     # data_points['timestamp'] = data_points['timestamp'].astype(np.int64) // 10**6
     data_points = data_points.iloc[::-1]
     data_points = data_points.sort_values(by='timestamp')
 
-    price_data['timestamp'] = pd.to_datetime(price_data['timestamp'] ,unit='ms', utc=True)
+    price_data['timestamp'] = pd.to_datetime(price_data['timestamp'] , utc=True)
     price_data = price_data.sort_values(by='timestamp')
 
-    new_df = pd.merge_asof(price_data, data_points, on='timestamp', tolerance=pd.Timedelta("{} minutes".format(timeframe + 2)))
+    new_df = pd.merge_asof(price_data, data_points, on='timestamp', tolerance=pd.Timedelta("{} minutes".format(timeframe + offset)))
     new_df = new_df.loc[:,~new_df.columns.str.match("Unnamed")]
     new_df.to_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv", index=False)

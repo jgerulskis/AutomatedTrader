@@ -18,8 +18,5 @@ class AbstractModel:
   def get_testing_labels(self):
     return self.testing_labels
 
-  def train(self):
-    pass
-
   def test(self):
     pass

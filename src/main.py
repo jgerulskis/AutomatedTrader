@@ -1,8 +1,12 @@
 import pandas as pd
+import seaborn as sn
+import matplotlib.pyplot as plt
+from scipy.stats import spearmanr
+
 import config
 from utilities.historical_data import TwitterHistorical
 from utilities.stream_data import TwitterStream
-from models.linear_regression import KNN
+from models.linear_regression import LR
 
 # HISTORICAL
 # x = TwitterHistorical(config.consumer_key, config.secret_consumer_key, config.access_key, config.secret_access_key, "/home/jack/Desktop/mqp/twitter_data_collector/data/tweets.csv")
@@ -17,7 +21,7 @@ from models.linear_regression import KNN
 # x.to_data_points(timeframe=1)
 #
 # Merge data points and price data by closest date within a timeframe
-# TwitterHistorical.merge_with_historical(data_points, price_data, timeframe=1)
+# TwitterHistorical.merge_with_historical(data_points, price_data, timeframe=1440, offset=1440)
 
 # STREAMING
 # x = TwitterStream(config.bearer_token)
@@ -25,13 +29,19 @@ from models.linear_regression import KNN
 # Start streaming tweets
 # x.start()
 
+# ANALYZE MODEL CORRELATIONS
+def show_correlation_matrix(dataframe, method='kendall'):
+  matrix = dataframe.corr(method=method)
+  sn.heatmap(matrix, annot=True)
+  plt.show()
+
 # Models
 df = pd.read_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv")
 df = df.dropna()
-k = KNN(df.drop(['candles', 'timestamp'], axis=1), df['candles'])
+show_correlation_matrix(df)
+k = LR(df.drop(['Timestamp', 'Low', 'High', 'Close'], axis=1), df['Close'])
 
-k.train()
-k.r2()
+k.test()
 
 
 
