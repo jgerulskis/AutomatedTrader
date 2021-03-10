@@ -15,36 +15,34 @@ project_directory = 'C:/Users/dtwiz/Documents/GitHub/Twitter-data-collector/'#Mu
 #     'params' : {'nCandles' : 7}
 # }
 
-settings = {
-    'inputPath': project_directory + 'data\\ETH_1_Minute_COMP.csv',
-    'outPath': project_directory + 'data\\ETH_1_Minute_COMP.csv',
-    'asset': 'ETH',
-    'quote': 'USD',
-    'cTime': 1,
-    'cUnit': 'm',  #D for day
-    'function': 'combineData',
-    'params': {
-        'addPath' : project_directory + 'data\\ETH_volRatio_1_Minute.csv'
-    }
-}
-
-
 # settings = {
-#     'inputPath': project_directory + 'data/KRAKEN_XRPUSD, 1D.csv',
-#     'outPath': project_directory + 'data/KRAKEN_XRPUSD, 1D COMP.csv',
-#     'asset': 'XRP', #the asset being traded
-#     'quote': 'USD', #the currency that the price is given in
-#     'cTime': 1, #number of units of time in each time step
-#     'cUnit': 'D',  #m for minute and D for day
-#     'function': 'combineData',
+#     'inputPath': project_directory + 'data\\KRAKEN_XRPUSD, 1D.csv',
+#     'outPath': project_directory + 'data\\XRP_priceOverMA_1_Day.csv',
+#     'asset': 'XRP',
+#     'quote': 'USD',
+#     'cTime': 1,
+#     'cUnit': 'D',  #D for day
+#     'function': 'priceOverMA',
 #     'params': {
-#         'addPath' : project_directory + 'data/XRP_ext_1_Day.csv',
+#         'period' : 200
 #     }
 # }
 
+settings = {
+    'inputPath': project_directory + 'data/KRAKEN_XRPUSD, 15.csv',
+    'outPath': project_directory + 'data/KRAKEN_XRPUSD, 15 COMP.csv',
+    'asset': 'XRP', #the asset being traded
+    'quote': 'USD', #the currency that the price is given in
+    'cTime': 1, #number of units of time in each time step
+    'cUnit': 'D',  #m for minute and D for day
+    'function': 'scale',
+    'params': {
+        'addPath' : project_directory + 'data/XRP_priceOverMA_1_Day.csv',
+    }
+}
+
 def dataMaker(inData, mapFunction):  #map functions take in a list of dictionaries and output a list of dictionaries
     return mapFunction(inData)
-
 
 def saveData(data, fields, name):  #save 2d list as a csv
     with open(name, 'w') as file:
@@ -99,6 +97,30 @@ def avgVolume(data):
         avgVols[x % avgCandles] = float(data[index]['vol'])
     return outData
 
+def scale(data):
+    temp = {}
+    for y in data[0].keys():#make a dictionary of lists
+        temp[y] = []
+    for x in range(len(data)):#fill lists with values
+        for y in data[x]:
+            if (data[x][y] != None) & (data[x][y] != ''):
+                temp[y].append(float(data[x][y]))
+    for x in temp:
+        minimum = min(temp[x])
+        maximum = max(temp[x])
+        print(minimum)
+        print(maximum)
+        temp[x] = {}
+        temp[x]['min'] = float(minimum)
+        temp[x]['max'] = float(maximum)
+    for x in range(len(data)):#normalize data
+        for y in data[x]:
+            if (data[x][y] != None) & (data[x][y] != ''):
+                print(data[x][y])
+                data[x][y] = (float(data[x][y]) - temp[y]['min']) / (temp[y]['max'] - temp[y]['min'])
+    return data
+
+
 def stripData(data):
     outData = []
     for x in range(len(data)):
@@ -152,6 +174,15 @@ def MA(data):
         outData[index][0] = ma
     return outData
 
+def priceOverMA(data):
+    outData = []
+    ma = MA(data)
+    for x in range(len(data)):
+        outData.append([None])
+    for x in range(len(data)):
+        if ma[x][0] != None:
+            outData[x][0] = float(data[x]['close']) / ma[x][0]
+    return outData
 
 def perATH(data):
     outData = []
@@ -239,6 +270,8 @@ def getCandles(fileName):
     #                      delimiter=',',
     #                      skiprows=1,
     #                      usecols=(0, 1, 2, 3, 4, 5))
+    if settings['function'] == 'scale':
+        return loadData(fileName)
     candleList = []
     tempArr = loadData(fileName)
     for x in range(len(tempArr)):
@@ -294,12 +327,16 @@ nameToFuntion = {
     'avgVolume': avgVolume,
     'volume': volume,
     'stripData' : stripData,
-    'combineData': combineData
+    'combineData': combineData,
+    'scale' : scale,
+    'priceOverMA' : priceOverMA
 }
 
 def nameToFields(name, data):
     if name == 'combineData':
         return combineFields(data)
+    if name == 'scale':
+        return data[0].keys()
     nameToFields = {
         'extCandle': ['extPrice', 'candles'],
         'ROIInNCandles': ['long roi'],
@@ -308,7 +345,8 @@ def nameToFields(name, data):
         'avgVolumeRatio': ['ratio'],
         'avgVolume': ['avgVol'],
         'volume': ['volume'],
-        'stripData' : ['time', 'open', 'high', 'low', 'close', 'vol']
+        'stripData' : ['time', 'open', 'high', 'low', 'close', 'vol'],
+        'priceOverMA' : ['priceOverMA']
     }
     return nameToFields[name]
 
@@ -326,9 +364,8 @@ if len(sys.argv) > 0:
         outName = sys.argv[2]
     else:
         outName = settings['outPath']
-    data = dataMaker(getCandles(inputPath),
-                     nameToFuntion[settings['function']])
-    if settings['function'] == 'combineData':
+    data = dataMaker(getCandles(inputPath), nameToFuntion[settings['function']])
+    if (settings['function'] == 'combineData') | (settings['function'] == 'scale'):
         saveCSV(data, outName)
     else:
         saveData(data, nameToFields(settings['function'], data), outName)
