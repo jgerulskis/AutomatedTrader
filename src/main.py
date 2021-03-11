@@ -7,6 +7,7 @@ import config
 from utilities.historical_data import TwitterHistorical
 from utilities.stream_data import TwitterStream
 from models.linear_regression import LR
+from models.neural_network import MLP
 
 # HISTORICAL
 # x = TwitterHistorical(config.consumer_key, config.secret_consumer_key, config.access_key, config.secret_access_key, "/home/jack/Desktop/mqp/twitter_data_collector/data/tweets.csv")
@@ -38,8 +39,10 @@ def show_correlation_matrix(dataframe, method='kendall'):
 # Models
 df = pd.read_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv")
 df = df.dropna()
+df = df.drop(['High', 'Low', 'Daily Net', 'Date'], axis=1)
+
 show_correlation_matrix(df)
-k = LR(df.drop(['Date', 'High', 'Low', 'Close', 'Daily Net', 'Percent Gained'], axis=1), df['Percent Gained'])
+k = MLP(df.drop(['Percent Gained'], axis=1), df['Percent Gained'])
 k.test()
 k.evaluate()
 
