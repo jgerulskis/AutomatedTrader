@@ -39,7 +39,7 @@ def show_correlation_matrix(dataframe, method='kendall'):
 # Models
 df = pd.read_csv("/home/jack/Desktop/mqp/twitter_data_collector/data/price_and_sentiment.csv")
 df = df.dropna()
-df = df.drop(['High', 'Low', 'Daily Net', 'Date'], axis=1)
+df = df.drop(['High', 'Low', 'Close', 'Daily Net', 'Date'], axis=1)
 
 show_correlation_matrix(df)
 k = MLP(df.drop(['Percent Gained'], axis=1), df['Percent Gained'])
